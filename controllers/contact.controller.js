@@ -2,7 +2,7 @@ import asyncHandler from "express-async-handler";
 import { Contact } from "../models/contact.model.js";
 
 export const getAllContacts = asyncHandler(async (req, res) => {
-  const contacts = await Contact.find();
+  const contacts = await Contact.find({user_id:req.user.id});
   res.status(200).json(contacts);
 });
 
@@ -26,6 +26,7 @@ export const createContact = asyncHandler(async (req, res) => {
     name,
     email,
     phoneNumber,
+    user_id:req.user.id
   });
 
   res.status(201).json(contact);
@@ -36,6 +37,10 @@ export const updateContact = asyncHandler(async (req, res) => {
   if (!contact) {
     res.status(404);
     throw new Error("contact not found");
+  }
+  if(contact.user_id.toString()!==req.user.id){
+    res.status(403);
+    throw new Error("user dont have permission to update other user contacts")
   }
   const updatedContact = await Contact.findByIdAndUpdate(
     req.params.id,
@@ -50,6 +55,10 @@ export const deleteContact = asyncHandler(async (req, res) => {
   if (!contact) {
     res.status(404);
     throw new Error("contact not found");
+  }
+  if(contact.user_id.toString()!==req.user.id){
+    res.status(403);
+    throw new Error("user dont have permission to delete other user contacts")
   }
   await Contact.findByIdAndDelete(req.params.id);
   res.status(200).json({ message: `deleted contact ${req.body.name}` });
